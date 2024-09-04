@@ -1,4 +1,7 @@
 const express = require('express');
+const requestIp = require('request-ip');
+const useragent = require('useragent');
+const geoip = require('geoip-lite');
 const app = express();
 const PORT = 3000;
 
@@ -24,6 +27,33 @@ app.get('/', (req, res) => {
     ipAddress,
   });
 });
+
+app.get('/user-info', (req, res) => {
+  const clientIp = requestIp.getClientIp(req);
+  const geo = geoip.lookup(clientIp);
+  const agent = useragent.parse(req.headers['user-agent']);
+
+  const userInfo = {
+    ip: clientIp || 'Not found',
+    geolocation: geo || 'Not found',
+    device: {
+      family: agent.device.family,
+      platform: agent.os.family,
+      browser: agent.family,
+      version: agent.toVersion(),
+    },
+    city: geo?.city || 'Not found',
+    country: geo?.country || 'Not found',
+    region: geo?.region || 'Not found',
+    userAgent: req.headers['user-agent'] || 'Not found',
+  };
+
+  res.json({
+    message: 'User information',
+    userInfo,
+  });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
